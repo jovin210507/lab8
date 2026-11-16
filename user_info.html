@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Information</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #e8f1ee; color: #1e3330; }
+    header { background: #1f5f55; color: #fff; text-align: center; padding: 24px 16px; }
+    header h1 { margin: 0; font-size: 1.7rem; }
+    main { max-width: 560px; margin: 30px auto; padding: 0 16px; }
+    .page { background: #fff; border: 1px solid #c5d9d3; border-radius: 10px; padding: 28px; }
+    .page[hidden] { display: none; }
+    h2 { margin-top: 0; color: #1f5f55; }
+    label, legend { display: block; margin: 16px 0 6px; font-weight: 600; }
+    fieldset { border: 0; padding: 0; margin: 0; }
+    input[type=text], input[type=tel], input[type=email], select {
+      width: 100%; padding: 10px; border: 1px solid #a9c0b9; border-radius: 6px; font-size: 1rem; background: #fff;
+    }
+    input:focus, select:focus { outline: 2px solid #2e9c8a; border-color: #2e9c8a; }
+    .radios label { display: inline-block; margin: 0 18px 0 0; font-weight: 400; }
+    .error { color: #b3261e; font-size: .88rem; min-height: 1.1em; margin: 4px 0 0; }
+    .row { display: flex; gap: 10px; margin-top: 22px; }
+    button { padding: 10px 22px; border: 0; border-radius: 6px; font-size: 1rem; cursor: pointer; background: #1f5f55; color: #fff; }
+    button:hover { background: #17463f; }
+    button.secondary { background: #6b7f7a; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 8px; text-align: left; border-bottom: 1px solid #dde8e4; }
+    th { width: 38%; color: #1f5f55; }
+    .done { color: #1b7a3d; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<header><h1>User Information</h1></header>
+
+<main>
+  <!-- PAGE 1: the form -->
+  <section class="page" id="formPage">
+    <h2>Enter your details</h2>
+    <form id="userForm" novalidate>
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" autocomplete="name">
+      <p class="error" id="nameErr"></p>
+
+      <fieldset class="radios">
+        <legend>Gender</legend>
+        <label><input type="radio" name="gender" value="Male"> Male</label>
+        <label><input type="radio" name="gender" value="Female"> Female</label>
+        <label><input type="radio" name="gender" value="Other"> Other</label>
+      </fieldset>
+      <p class="error" id="genderErr"></p>
+
+      <label for="mobile">Mobile number</label>
+      <input type="tel" id="mobile" name="mobile" maxlength="10" inputmode="numeric" placeholder="10 digits" autocomplete="tel">
+      <p class="error" id="mobileErr"></p>
+
+      <label for="email">Mail ID</label>
+      <input type="email" id="email" name="email" autocomplete="email">
+      <p class="error" id="emailErr"></p>
+
+      <label for="country">Country</label>
+      <select id="country" name="country"><option value="">Select country</option></select>
+      <p class="error" id="countryErr"></p>
+
+      <label for="state">State</label>
+      <select id="state" name="state" disabled><option value="">Select country first</option></select>
+      <p class="error" id="stateErr"></p>
+
+      <label for="city">City</label>
+      <input type="text" id="city" name="city" autocomplete="address-level2">
+      <p class="error" id="cityErr"></p>
+
+      <div class="row">
+        <button type="submit">Submit</button>
+        <button type="reset" class="secondary">Clear</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- PAGE 2: the details -->
+  <section class="page" id="detailsPage" hidden>
+    <h2>Submitted details</h2>
+    <p class="done">Your information was saved successfully.</p>
+    <table><tbody id="detailsBody"></tbody></table>
+    <div class="row">
+      <button id="editBtn">Edit details</button>
+      <button id="newBtn" class="secondary">Enter new user</button>
+    </div>
+  </section>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const form = $("userForm");
+
+  const places = {
+    "India": ["Karnataka", "Maharashtra", "Tamil Nadu", "Delhi", "Telangana"],
+    "United States": ["California", "Texas", "New York", "Washington"],
+    "United Kingdom": ["England", "Scotland", "Wales", "Northern Ireland"],
+    "Australia": ["New South Wales", "Victoria", "Queensland"]
+  };
+
+  // Fill the country list
+  Object.keys(places).forEach(c => $("country").add(new Option(c, c)));
+
+  // Fill the states when the country changes
+  function loadStates(country, selected = "") {
+    const st = $("state");
+    st.length = 0;
+    if (!country) {
+      st.add(new Option("Select country first", ""));
+      st.disabled = true;
+      return;
+    }
+    st.add(new Option("Select state", ""));
+    places[country].forEach(s => st.add(new Option(s, s)));
+    st.disabled = false;
+    st.value = selected;
+  }
+  $("country").addEventListener("change", e => loadStates(e.target.value));
+
+  function setError(id, msg) { $(id).textContent = msg; return !msg; }
+
+  function validate() {
+    const v = Object.fromEntries(new FormData(form));
+    let ok = true;
+    ok = setError("nameErr", /^[A-Za-z][A-Za-z .'-]{1,}$/.test((v.name || "").trim()) ? "" : "Enter a valid name (letters only).") && ok;
+    ok = setError("genderErr", v.gender ? "" : "Select a gender.") && ok;
+    ok = setError("mobileErr", /^[6-9]\d{9}$/.test(v.mobile || "") ? "" : "Enter a 10-digit mobile number starting with 6-9.") && ok;
+    ok = setError("emailErr", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email || "") ? "" : "Enter a valid email address.") && ok;
+    ok = setError("countryErr", v.country ? "" : "Select a country.") && ok;
+    ok = setError("stateErr", v.state ? "" : "Select a state.") && ok;
+    ok = setError("cityErr", (v.city || "").trim() ? "" : "Enter your city.") && ok;
+    return ok;
+  }
+
+  // Show the form page or the details page
+  function show(page) {
+    $("formPage").hidden = page !== "form";
+    $("detailsPage").hidden = page !== "details";
+    window.scrollTo(0, 0);
+  }
+
+  function showDetails(data) {
+    const rows = [
+      ["Name", data.name], ["Gender", data.gender], ["Mobile number", data.mobile],
+      ["Mail ID", data.email], ["City", data.city], ["State", data.state], ["Country", data.country]
+    ];
+    const body = $("detailsBody");
+    body.textContent = "";
+    for (const [label, value] of rows) {
+      const tr = body.insertRow();
+      const th = document.createElement("th");
+      th.textContent = label;
+      tr.appendChild(th);
+      tr.insertCell().textContent = value;
+    }
+    show("details");
+    location.hash = "details";
+  }
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    if (!validate()) return;
+    const data = Object.fromEntries(new FormData(form));
+    data.name = data.name.trim();
+    data.city = data.city.trim();
+    sessionStorage.setItem("userInfo", JSON.stringify(data));   // pass data to the next page
+    showDetails(data);
+  });
+
+  form.addEventListener("reset", () => {
+    document.querySelectorAll(".error").forEach(p => p.textContent = "");
+    loadStates("");
+  });
+
+  $("editBtn").addEventListener("click", () => {
+    const data = JSON.parse(sessionStorage.getItem("userInfo") || "{}");
+    for (const key of ["name", "mobile", "email", "city"]) $(key).value = data[key] || "";
+    const radio = form.querySelector(`input[name=gender][value="${data.gender}"]`);
+    if (radio) radio.checked = true;
+    $("country").value = data.country || "";
+    loadStates(data.country, data.state);
+    show("form");
+    location.hash = "form";
+  });
+
+  $("newBtn").addEventListener("click", () => {
+    sessionStorage.removeItem("userInfo");
+    form.reset();
+    show("form");
+    location.hash = "form";
+  });
+
+  // Back/forward buttons and page refresh
+  function route() {
+    const saved = sessionStorage.getItem("userInfo");
+    if (location.hash === "#details" && saved) showDetails(JSON.parse(saved));
+    else show("form");
+  }
+  window.addEventListener("hashchange", route);
+  route();
+</script>
+</body>
+</html>
